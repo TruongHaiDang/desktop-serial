@@ -1,20 +1,19 @@
-cmake_minimum_required(VERSION 3.21)
-project("Desktop Serial" VERSION 1.0.0 LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.25) # Specify the minimum version of CMake required.
+project(DesktopSerial VERSION 1.0.0 LANGUAGES C CXX) # Specify the languages are used in this project.
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_STANDARD 17) # C++ standard
+set(CMAKE_CXX_STANDARD_REQUIRED ON) # Require standard
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -O2")
 
-set(AUTOUIC ON)
-set(AUTORCC ON)
-set(AUTOMOC ON)
+set(CMAKE_AUTORCC ON) # Auto processing qrc file
+set(CMAKE_AUTOUIC ON) # Auto processing ui file
+set(CMAKE_AUTOMOC ON) # Auto processing macro
 
-set(EXEC_NAME "desktop-serial")
+set(EXEC_NAME "DesktopSerial")
+
+# Find Qt6 library and import 3 basic components. Stop if not found.
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
-include_directories(include)
-include_directories(ui)
-
-add_subdirectory(src)
+include_directories(inc)
 add_subdirectory(ui)
+add_subdirectory(src)
