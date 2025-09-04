@@ -1,8 +1,7 @@
-#pragma once
-
 #ifndef __MAIN_WINDOW_H__
 #define __MAIN_WINDOW_H__
 
+#include "ui_MainWindow.h"
 #include <QMainWindow>
 #include <QWidget>
 

@@ -28,7 +28,13 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QTextEdit" name="dataTransRecv"/>
+          <widget class="QTextEdit" name="dataTransRecv">
+           <property name="font">
+            <font>
+             <family>Google Sans Code</family>
+            </font>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

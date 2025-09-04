@@ -3,6 +3,7 @@ project(DesktopSerial VERSION 1.0.0 LANGUAGES C CXX) # Specify the languages are
 
 set(CMAKE_CXX_STANDARD 17) # C++ standard
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # Require standard
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -O2")
 
 set(CMAKE_AUTORCC ON) # Auto processing qrc file
@@ -15,5 +16,6 @@ set(EXEC_NAME "DesktopSerial")
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 include_directories(inc)
-add_subdirectory(ui)
+include_directories(ui)
 add_subdirectory(src)
+add_subdirectory(ui)

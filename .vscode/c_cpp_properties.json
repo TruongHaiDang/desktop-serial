@@ -4,7 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/lib/x86_64-linux-gnu/qt6/**"
+                "${workspaceFolder}/inc/**",
+                "/usr/include/x86_64-linux-gnu/qt6/**",
+                "${workspaceFolder}/build/src/DesktopSerial_autogen/include/**"
             ],
             "defines": [],
             "compilerPath": "/home/haidang/.local/share/swiftly/bin/clang",
