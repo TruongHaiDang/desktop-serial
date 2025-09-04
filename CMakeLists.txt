@@ -13,7 +13,7 @@ set(CMAKE_AUTOMOC ON) # Auto processing macro
 set(EXEC_NAME "DesktopSerial")
 
 # Find Qt6 library and import 3 basic components. Stop if not found.
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets SerialPort)
 
 include_directories(inc)
 include_directories(ui)

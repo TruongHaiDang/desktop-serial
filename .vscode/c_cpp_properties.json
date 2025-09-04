@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/inc/**",
                 "/usr/include/x86_64-linux-gnu/qt6/**",
-                "${workspaceFolder}/build/src/DesktopSerial_autogen/include/**"
+                "${workspaceFolder}/build/src/DesktopSerial_autogen/include/**",
+                "/usr/include/x86_64-linux-gnu/qt6/QtSerialPort/**"
             ],
             "defines": [],
             "compilerPath": "/home/haidang/.local/share/swiftly/bin/clang",

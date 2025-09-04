@@ -34,6 +34,9 @@
              <family>Google Sans Code</family>
             </font>
            </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
           </widget>
          </item>
         </layout>
@@ -88,7 +91,7 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
-              <widget class="QComboBox" name="delimiter"/>
+              <widget class="QComboBox" name="newLine"/>
              </item>
              <item>
               <widget class="QComboBox" name="templateCommands"/>
