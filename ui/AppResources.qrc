@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="app">
+    <file>assets/port.png</file>
+    <file>assets/youtube-logo.png</file>
+  </qresource>
+</RCC>
