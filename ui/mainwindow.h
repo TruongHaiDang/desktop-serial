@@ -12,7 +12,7 @@
 #include <QList>
 #include <QSerialPort>
 #include <QDateTime>
-#include "serialreader.h"
+#include "../inc/serialreader.h"
 
 // Namespace and class placeholders generated in ui_<classname>.h follow the naming conventions of your project.
 namespace Ui {
@@ -50,6 +50,7 @@ class MainWindow: public QMainWindow {
         void sendData();
         void handleReceivedData(const QString &data); ///< Xử lý dữ liệu nhận.
         void appendMessage(const QString &prefix, const QString &data, const QString &color); ///< Hiển thị dữ liệu với màu.
+        void updateSerialReaderNewLine(); ///< Cập nhật newline cho SerialReader.
 
     public:
         explicit MainWindow(QWidget *parent = nullptr);

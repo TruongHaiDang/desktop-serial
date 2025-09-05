@@ -77,6 +77,9 @@ void MainWindow::initializeInterface()
 
     QList<QString> popularNewLines = {"LF (\\n)", "CRLF (\\r\\n)", "CR (\\r)", "None"};
     ui->newLine->addItems(popularNewLines);
+    
+    // Thiết lập QTextEdit để hiển thị HTML
+    ui->dataTransRecv->setAcceptRichText(true);
 }
 
 /**
@@ -142,7 +145,7 @@ void MainWindow::loadSettings()
  * @brief Khi chọn COM port mới.
  * @param index int chỉ số trong combo box.
  */
-void MainWindow::onComportChanged(int index)
+void MainWindow::onComportChanged(int /*index*/)
 {
     QString currComPort = ui->comPort->currentText();
     settings.setValue("COM_PORT", currComPort);
@@ -153,7 +156,7 @@ void MainWindow::onComportChanged(int index)
  * @brief Khi chọn baudrate mới.
  * @param index int chỉ số trong combo box.
  */
-void MainWindow::onBaudrateChanged(int index)
+void MainWindow::onBaudrateChanged(int /*index*/)
 {
     QString currBaud = ui->baudrate->currentText();
     int baudValue = currBaud.toInt();
@@ -166,7 +169,7 @@ void MainWindow::onBaudrateChanged(int index)
  * @brief Khi chọn parity mới.
  * @param index int chỉ số trong combo box.
  */
-void MainWindow::onParityChanged(int index)
+void MainWindow::onParityChanged(int /*index*/)
 {
     QString currParity = ui->parityBit->currentText();
     int parityValue = currParity.toInt();
@@ -179,7 +182,7 @@ void MainWindow::onParityChanged(int index)
  * @brief Khi chọn kích thước dữ liệu mới.
  * @param index int chỉ số trong combo box.
  */
-void MainWindow::onDataSizeChanged(int index)
+void MainWindow::onDataSizeChanged(int /*index*/)
 {
     QString currDataSize = ui->dataSize->currentText();
     int dataSizeValue = currDataSize.toInt();
@@ -231,12 +234,13 @@ void MainWindow::onBinaryModeToggled(bool checked)
  * @brief Khi chọn ký tự xuống dòng mới.
  * @param index int chỉ số trong combo box.
  */
-void MainWindow::onNewLineChanged(int index)
+void MainWindow::onNewLineChanged(int /*index*/)
 {
     QString text = ui->newLine->currentText();
     this->newLine = text;
     settings.setValue("New_Line", text);
     statusBar()->showMessage(QString("New Line: %1").arg(text), 2000);
+    updateSerialReaderNewLine();
 }
 
 /**
@@ -258,7 +262,7 @@ void MainWindow::sendData()
     QString sendStr = data + newline;
     if (serial.isOpen())
         serial.write(sendStr.toUtf8());
-    appendMessage(">>", sendStr.trimmed(), "#0000FF");
+    appendMessage(">>", data, "#FFFFFF");
     ui->input->setText("");
 }
 
@@ -268,7 +272,7 @@ void MainWindow::sendData()
  */
 void MainWindow::handleReceivedData(const QString &data)
 {
-    appendMessage("<<", data.trimmed(), "#008000");
+    appendMessage("<<", data, "#008000");
 }
 
 /**
@@ -279,12 +283,12 @@ void MainWindow::handleReceivedData(const QString &data)
  */
 void MainWindow::appendMessage(const QString &prefix, const QString &data, const QString &color)
 {
-    QString timeStr = QDateTime::currentDateTime().toString("hh:mm:ss dd/MM/yyyy");
-    QString html = QString("<span style=\"color:%1;\">%2 %3 %4</span>")
-                        .arg(color)
-                        .arg(timeStr)
-                        .arg(prefix)
-                        .arg(data);
+    const QString timeStr = QDateTime::currentDateTime().toString("hh:mm:ss dd/MM/yyyy");
+    const QString html = QString("<span style=\"color:%1;\">%2 %3 %4</span>")
+        .arg(color,
+             timeStr.toHtmlEscaped(),
+             prefix.toHtmlEscaped(),   // << sẽ thành &lt;&lt;
+             data.toHtmlEscaped());    // bảo vệ mọi dấu <, &, "
     ui->dataTransRecv->append(html);
 }
 
@@ -333,12 +337,35 @@ void MainWindow::connectOrDisconnect()
             statusBar()->showMessage(QString("Connected to %1").arg(serial.portName()), 2000);
 
             readerThread = new SerialReader(&serial, this);
-            connect(readerThread, &SerialReader::dataReceived, this, &MainWindow::handleReceivedData);
+            connect(readerThread, &SerialReader::dataReceived, this, &MainWindow::handleReceivedData, Qt::QueuedConnection);
             readerThread->start();
+            updateSerialReaderNewLine();
         }
         else
         {
             statusBar()->showMessage(QString("Failed to connect: %1").arg(serial.errorString()), 3000);
         }
+    }
+}
+
+/**
+ * @brief Cập nhật newline cho SerialReader.
+ */
+void MainWindow::updateSerialReaderNewLine()
+{
+    if (readerThread)
+    {
+        QString newline;
+        if (this->newLine.startsWith("LF"))
+            newline = "\n";
+        else if (this->newLine.startsWith("CRLF"))
+            newline = "\r\n";
+        else if (this->newLine.startsWith("CR"))
+            newline = "\r";
+        else
+            newline = "\r\n"; // Mặc định
+        
+        // Cập nhật newline cho SerialReader thông qua signal/slot
+        QMetaObject::invokeMethod(readerThread, "setNewLine", Qt::QueuedConnection, Q_ARG(QString, newline));
     }
 }
