@@ -11,6 +11,8 @@
 #include <QSerialPortInfo>
 #include <QList>
 #include <QSerialPort>
+#include <QDateTime>
+#include "serialreader.h"
 
 // Namespace and class placeholders generated in ui_<classname>.h follow the naming conventions of your project.
 namespace Ui {
@@ -24,7 +26,8 @@ class MainWindow: public QMainWindow {
         Ui::MainWindow *ui; // Receive the ui pointer in ui_<classname>.h
         QSettings settings;
         QSerialPort serial;
-        
+        SerialReader *readerThread; ///< Thread lắng nghe dữ liệu.
+
         QString comPort;
         int baudrate;
         int parity;
@@ -45,6 +48,8 @@ class MainWindow: public QMainWindow {
         void loadSettings();
         void connectOrDisconnect();
         void sendData();
+        void handleReceivedData(const QString &data); ///< Xử lý dữ liệu nhận.
+        void appendMessage(const QString &prefix, const QString &data, const QString &color); ///< Hiển thị dữ liệu với màu.
 
     public:
         explicit MainWindow(QWidget *parent = nullptr);
