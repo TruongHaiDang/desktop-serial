@@ -260,8 +260,8 @@ void MainWindow::sendData()
 
     QString data = ui->input->text();
     QString sendStr = data + newline;
-    if (serial.isOpen())
-        serial.write(sendStr.toUtf8());
+    if (readerThread)
+        readerThread->writeData(sendStr.toUtf8());
     appendMessage(">>", data, "#FFFFFF");
     ui->input->setText("");
 }
@@ -297,17 +297,14 @@ void MainWindow::appendMessage(const QString &prefix, const QString &data, const
  */
 void MainWindow::connectOrDisconnect()
 {
-    if (serial.isOpen())
+    if (readerThread)
     {
         // Disconnect
-        if (readerThread)
-        {
-            readerThread->stop();
-            readerThread->wait();
-            delete readerThread;
-            readerThread = nullptr;
-        }
-        serial.close();
+        readerThread->stop();
+        readerThread->wait();
+        serial.moveToThread(this->thread());
+        delete readerThread;
+        readerThread = nullptr;
         ui->connDisconnBtn->setText("Connect");
         ui->comPort->setEnabled(true);
         ui->baudrate->setEnabled(true);
@@ -337,6 +334,7 @@ void MainWindow::connectOrDisconnect()
             statusBar()->showMessage(QString("Connected to %1").arg(serial.portName()), 2000);
 
             readerThread = new SerialReader(&serial, this);
+            serial.moveToThread(readerThread);
             connect(readerThread, &SerialReader::dataReceived, this, &MainWindow::handleReceivedData, Qt::QueuedConnection);
             readerThread->start();
             updateSerialReaderNewLine();
@@ -365,7 +363,7 @@ void MainWindow::updateSerialReaderNewLine()
         else
             newline = "\r\n"; // Mặc định
         
-        // Cập nhật newline cho SerialReader thông qua signal/slot
-        QMetaObject::invokeMethod(readerThread, "setNewLine", Qt::QueuedConnection, Q_ARG(QString, newline));
+        // Cập nhật newline trực tiếp với bảo vệ mutex
+        readerThread->setNewLine(newline);
     }
 }
