@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->binaryMode, &QRadioButton::toggled, this, &MainWindow::onBinaryModeToggled);
     connect(ui->newLine, &QComboBox::currentIndexChanged, this, &MainWindow::onNewLineChanged);
     connect(ui->input, &QLineEdit::returnPressed, this, &MainWindow::sendData);
+    connect(ui->connDisconnBtn, &QPushButton::clicked, this, &MainWindow::connectOrDisconnect);
 
     ui->input->setFocus();
     statusBar()->showMessage("Ready");
@@ -54,7 +55,7 @@ void MainWindow::initializeInterface()
     QList<QString> popularParityBit = {"0", "1"};
     ui->parityBit->addItems(popularParityBit);
 
-    QList<QString> popularDataSize = {"8", "9"};
+    QList<QString> popularDataSize = {"5", "6", "7", "8"};
     ui->dataSize->addItems(popularDataSize);
 
     QList<QString> popularNewLines = {"LF (\\n)", "CRLF (\\r\\n)", "CR (\\r)", "None"};
@@ -196,4 +197,45 @@ void MainWindow::sendData()
     data += this->newLine;
     ui->dataTransRecv->append(data);
     ui->input->setText("");
+}
+
+void MainWindow::connectOrDisconnect()
+{
+    if (serial.isOpen())
+    {
+        // Disconnect
+        serial.close();
+        ui->connDisconnBtn->setText("Connect");
+        ui->comPort->setEnabled(true);
+        ui->baudrate->setEnabled(true);
+        ui->parityBit->setEnabled(true);
+        ui->dataSize->setEnabled(true);
+        ui->input->setEnabled(false);
+        statusBar()->showMessage("Disconnected", 2000);
+    }
+    else
+    {
+        // Connect
+        serial.setPortName(ui->comPort->currentText());
+        serial.setBaudRate(ui->baudrate->currentText().toInt());
+        serial.setParity(static_cast<QSerialPort::Parity>(ui->parityBit->currentText().toInt()));
+        serial.setDataBits(static_cast<QSerialPort::DataBits>(ui->dataSize->currentText().toInt()));
+        serial.setStopBits(QSerialPort::OneStop);
+        serial.setFlowControl(QSerialPort::NoFlowControl);
+
+        if (serial.open(QIODevice::ReadWrite))
+        {
+            ui->connDisconnBtn->setText("Disconnect");
+            ui->comPort->setEnabled(false);
+            ui->baudrate->setEnabled(false);
+            ui->parityBit->setEnabled(false);
+            ui->dataSize->setEnabled(false);
+            ui->input->setEnabled(true);
+            statusBar()->showMessage(QString("Connected to %1").arg(serial.portName()), 2000);
+        }
+        else
+        {
+            statusBar()->showMessage(QString("Failed to connect: %1").arg(serial.errorString()), 3000);
+        }
+    }
 }

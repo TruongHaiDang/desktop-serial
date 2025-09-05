@@ -10,6 +10,7 @@
 #include <QString>
 #include <QSerialPortInfo>
 #include <QList>
+#include <QSerialPort>
 
 // Namespace and class placeholders generated in ui_<classname>.h follow the naming conventions of your project.
 namespace Ui {
@@ -22,6 +23,7 @@ class MainWindow: public QMainWindow {
     private:
         Ui::MainWindow *ui; // Receive the ui pointer in ui_<classname>.h
         QSettings settings;
+        QSerialPort serial;
         
         QString comPort;
         int baudrate;
@@ -41,6 +43,7 @@ class MainWindow: public QMainWindow {
 
         void initializeInterface();
         void loadSettings();
+        void connectOrDisconnect();
         void sendData();
 
     public:
