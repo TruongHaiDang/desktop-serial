@@ -334,7 +334,6 @@ void MainWindow::connectOrDisconnect()
         // Disconnect
         readerThread->stop();
         readerThread->wait();
-        serial.moveToThread(this->thread());
         delete readerThread;
         readerThread = nullptr;
         ui->connDisconnBtn->setText("Connect");
