@@ -1,4 +1,7 @@
 #include "mainwindow.h"
+#include <QMenu>
+#include <QAction>
+#include <QTextCursor>
 
 /**
  * @brief Khởi tạo MainWindow và thiết lập các kết nối tín hiệu.
@@ -78,8 +81,10 @@ void MainWindow::initializeInterface()
     QList<QString> popularNewLines = {"LF (\\n)", "CRLF (\\r\\n)", "CR (\\r)", "None"};
     ui->newLine->addItems(popularNewLines);
     
-    // Thiết lập QTextEdit để hiển thị HTML
+    // Thiết lập QTextEdit để hiển thị HTML và menu chuột phải
     ui->dataTransRecv->setAcceptRichText(true);
+    ui->dataTransRecv->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->dataTransRecv, &QWidget::customContextMenuRequested, this, &MainWindow::showDataTransRecvContextMenu);
 }
 
 /**
@@ -290,6 +295,32 @@ void MainWindow::appendMessage(const QString &prefix, const QString &data, const
              prefix.toHtmlEscaped(),   // << sẽ thành &lt;&lt;
              data.toHtmlEscaped());    // bảo vệ mọi dấu <, &, "
     ui->dataTransRecv->append(html);
+    QTextCursor cursor = ui->dataTransRecv->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    ui->dataTransRecv->setTextCursor(cursor);
+    ui->dataTransRecv->ensureCursorVisible();
+}
+
+/**
+ * @brief Hiển thị menu chuột phải cho vùng nhận dữ liệu.
+ * @param pos const QPoint& vị trí con trỏ chuột.
+ */
+void MainWindow::showDataTransRecvContextMenu(const QPoint &pos)
+{
+    QMenu *menu = ui->dataTransRecv->createStandardContextMenu();
+    menu->addSeparator();
+    QAction *clearAction = menu->addAction("Clear");
+    connect(clearAction, &QAction::triggered, this, &MainWindow::clearDataTransRecv);
+    menu->exec(ui->dataTransRecv->mapToGlobal(pos));
+    delete menu;
+}
+
+/**
+ * @brief Xóa toàn bộ nội dung trong ô hiển thị dữ liệu.
+ */
+void MainWindow::clearDataTransRecv()
+{
+    ui->dataTransRecv->clear();
 }
 
 /**
