@@ -14,6 +14,11 @@
 #include <QDateTime>
 #include <QPoint>
 #include "../inc/serialreader.h"
+#include <QMenu>
+#include <QAction>
+#include <QTextCursor>
+#include <QUrl>
+#include <QDesktopServices>
 
 // Namespace and class placeholders generated in ui_<classname>.h follow the naming conventions of your project.
 namespace Ui {

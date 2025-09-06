@@ -1,7 +1,4 @@
 #include "mainwindow.h"
-#include <QMenu>
-#include <QAction>
-#include <QTextCursor>
 
 /**
  * @brief Khởi tạo MainWindow và thiết lập các kết nối tín hiệu.
@@ -23,6 +20,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->newLine, &QComboBox::currentIndexChanged, this, &MainWindow::onNewLineChanged);
     connect(ui->input, &QLineEdit::returnPressed, this, &MainWindow::sendData);
     connect(ui->connDisconnBtn, &QPushButton::clicked, this, &MainWindow::connectOrDisconnect);
+    connect(ui->goToYoutube, &QPushButton::clicked, this, [](){
+        QUrl url("https://www.youtube.com/@truonghaiang7670");
+        QDesktopServices::openUrl(url);
+    });
 
     ui->input->setFocus();
     statusBar()->showMessage("Ready");
