@@ -1,6 +1,7 @@
 #include "../inc/serialreader.h"
 #include <QDebug>
 #include <QMutexLocker>
+#include <QApplication>
 
 SerialReader::SerialReader(QSerialPort *serial, QObject *parent)
     : QThread(parent), m_serial(serial), m_stop(false)
@@ -72,5 +73,11 @@ void SerialReader::run()
     if (m_serial && m_serial->isOpen())
     {
         m_serial->close();
+    }
+
+    if (m_serial)
+    {
+        // Đưa QSerialPort trở lại thread chính để tránh cảnh báo.
+        m_serial->moveToThread(QApplication::instance()->thread());
     }
 }
