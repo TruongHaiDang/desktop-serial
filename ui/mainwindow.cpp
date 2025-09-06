@@ -20,6 +20,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->newLine, &QComboBox::currentIndexChanged, this, &MainWindow::onNewLineChanged);
     connect(ui->input, &QLineEdit::returnPressed, this, &MainWindow::sendData);
     connect(ui->connDisconnBtn, &QPushButton::clicked, this, &MainWindow::connectOrDisconnect);
+    connect(ui->goToYoutube, &QPushButton::clicked, this, [](){
+        QUrl url("https://www.youtube.com/@truonghaiang7670");
+        QDesktopServices::openUrl(url);
+    });
 
     ui->input->setFocus();
     statusBar()->showMessage("Ready");
@@ -78,8 +82,10 @@ void MainWindow::initializeInterface()
     QList<QString> popularNewLines = {"LF (\\n)", "CRLF (\\r\\n)", "CR (\\r)", "None"};
     ui->newLine->addItems(popularNewLines);
     
-    // Thiết lập QTextEdit để hiển thị HTML
+    // Thiết lập QTextEdit để hiển thị HTML và menu chuột phải
     ui->dataTransRecv->setAcceptRichText(true);
+    ui->dataTransRecv->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->dataTransRecv, &QWidget::customContextMenuRequested, this, &MainWindow::showDataTransRecvContextMenu);
 }
 
 /**
@@ -260,8 +266,8 @@ void MainWindow::sendData()
 
     QString data = ui->input->text();
     QString sendStr = data + newline;
-    if (serial.isOpen())
-        serial.write(sendStr.toUtf8());
+    if (readerThread)
+        readerThread->writeData(sendStr.toUtf8());
     appendMessage(">>", data, "#FFFFFF");
     ui->input->setText("");
 }
@@ -290,6 +296,32 @@ void MainWindow::appendMessage(const QString &prefix, const QString &data, const
              prefix.toHtmlEscaped(),   // << sẽ thành &lt;&lt;
              data.toHtmlEscaped());    // bảo vệ mọi dấu <, &, "
     ui->dataTransRecv->append(html);
+    QTextCursor cursor = ui->dataTransRecv->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    ui->dataTransRecv->setTextCursor(cursor);
+    ui->dataTransRecv->ensureCursorVisible();
+}
+
+/**
+ * @brief Hiển thị menu chuột phải cho vùng nhận dữ liệu.
+ * @param pos const QPoint& vị trí con trỏ chuột.
+ */
+void MainWindow::showDataTransRecvContextMenu(const QPoint &pos)
+{
+    QMenu *menu = ui->dataTransRecv->createStandardContextMenu();
+    menu->addSeparator();
+    QAction *clearAction = menu->addAction("Clear");
+    connect(clearAction, &QAction::triggered, this, &MainWindow::clearDataTransRecv);
+    menu->exec(ui->dataTransRecv->mapToGlobal(pos));
+    delete menu;
+}
+
+/**
+ * @brief Xóa toàn bộ nội dung trong ô hiển thị dữ liệu.
+ */
+void MainWindow::clearDataTransRecv()
+{
+    ui->dataTransRecv->clear();
 }
 
 /**
@@ -297,17 +329,13 @@ void MainWindow::appendMessage(const QString &prefix, const QString &data, const
  */
 void MainWindow::connectOrDisconnect()
 {
-    if (serial.isOpen())
+    if (readerThread)
     {
         // Disconnect
-        if (readerThread)
-        {
-            readerThread->stop();
-            readerThread->wait();
-            delete readerThread;
-            readerThread = nullptr;
-        }
-        serial.close();
+        readerThread->stop();
+        readerThread->wait();
+        delete readerThread;
+        readerThread = nullptr;
         ui->connDisconnBtn->setText("Connect");
         ui->comPort->setEnabled(true);
         ui->baudrate->setEnabled(true);
@@ -337,6 +365,7 @@ void MainWindow::connectOrDisconnect()
             statusBar()->showMessage(QString("Connected to %1").arg(serial.portName()), 2000);
 
             readerThread = new SerialReader(&serial, this);
+            serial.moveToThread(readerThread);
             connect(readerThread, &SerialReader::dataReceived, this, &MainWindow::handleReceivedData, Qt::QueuedConnection);
             readerThread->start();
             updateSerialReaderNewLine();
@@ -365,7 +394,7 @@ void MainWindow::updateSerialReaderNewLine()
         else
             newline = "\r\n"; // Mặc định
         
-        // Cập nhật newline cho SerialReader thông qua signal/slot
-        QMetaObject::invokeMethod(readerThread, "setNewLine", Qt::QueuedConnection, Q_ARG(QString, newline));
+        // Cập nhật newline trực tiếp với bảo vệ mutex
+        readerThread->setNewLine(newline);
     }
 }

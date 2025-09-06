@@ -182,7 +182,7 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0">
         <item>
-         <widget class="QLabel" name="label_6">
+         <widget class="QLabel" name="youtubeLabel">
           <property name="font">
            <font>
             <pointsize>16</pointsize>
@@ -202,21 +202,25 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_5">
+         <widget class="QPushButton" name="goToYoutube">
           <property name="autoFillBackground">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string/>
           </property>
-          <property name="pixmap">
-           <pixmap resource="AppResources.qrc">:/app/assets/youtube-logo.png</pixmap>
+          <property name="icon">
+           <iconset resource="AppResources.qrc">
+            <normaloff>:/app/assets/youtube-logo.png</normaloff>:/app/assets/youtube-logo.png</iconset>
           </property>
-          <property name="scaledContents">
-           <bool>false</bool>
+          <property name="iconSize">
+           <size>
+            <width>96</width>
+            <height>96</height>
+           </size>
           </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
+          <property name="flat">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
