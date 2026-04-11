@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "config.h"
 #include <qdebug.h>
 #include <qlist.h>
 #include <qserialportinfo.h>
@@ -25,7 +26,7 @@ QFrame *createSeparator()
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle("Desktop Serial Free v1.0.0");
+    setWindowTitle(QStringLiteral(APP_NAME " v" APP_VERSION));
     resize(840, 900);
     setMinimumSize(840, 900);
 
