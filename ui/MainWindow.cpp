@@ -65,14 +65,6 @@ MainWindow::MainWindow(QWidget *parent)
     serialLayout->addWidget(createSendPanel());
 
     rootLayout->setStretchFactor(serialRoot, 1);
-
-    // Discover serial ports
-    QList<QSerialPortInfo> portList = this->m_serial.getAvailablePorts();
-    for (const auto &port : portList) {
-        qDebug() << "name:" << port.portName()
-                 << "desc:" << port.description()
-                 << "manufacturer:" << port.manufacturer();
-    }
 }
 
 QWidget *MainWindow::createSerialPanel()
@@ -96,7 +88,17 @@ QWidget *MainWindow::createSerialPanel()
         serialLayout->addWidget(combo);
     };
 
-    addLabeledCombo("Name", {""});
+    // Discover serial ports
+    QList<QString> portNames = {};
+    QList<QSerialPortInfo> portList = this->m_serial.getAvailablePorts();
+    for (const auto &port : portList) {
+        if (port.portName().contains("COM") || port.portName().contains("USB"))
+            portNames.append(port.portName());
+        // qDebug() << "name:" << port.portName()
+        //          << "desc:" << port.description()
+        //          << "manufacturer:" << port.manufacturer();
+    };
+    addLabeledCombo("Name", portNames);
     addLabeledCombo("Baud", {
         "300",
         "600",

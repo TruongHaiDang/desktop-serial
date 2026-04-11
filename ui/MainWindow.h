@@ -20,6 +20,7 @@
 #include <QDebug>
 
 #include "SerialManager.h"
+#include "AppSettings.h"
 
 class QCheckBox;
 class QComboBox;
@@ -37,6 +38,7 @@ public:
 
 private:
     SerialManager m_serial;
+    AppSettings m_appSettings;
 
     QWidget *createSerialPanel();
     QWidget *createModemLinesPanel();
