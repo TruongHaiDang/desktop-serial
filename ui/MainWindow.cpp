@@ -1,4 +1,7 @@
 #include "MainWindow.h"
+#include <qdebug.h>
+#include <qlist.h>
+#include <qserialportinfo.h>
 
 namespace
 {
@@ -22,7 +25,7 @@ QFrame *createSeparator()
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle("Desktop Serial");
+    setWindowTitle("Desktop Serial Free v1.0.0");
     resize(840, 900);
     setMinimumSize(840, 900);
 
@@ -62,6 +65,14 @@ MainWindow::MainWindow(QWidget *parent)
     serialLayout->addWidget(createSendPanel());
 
     rootLayout->setStretchFactor(serialRoot, 1);
+
+    // Discover serial ports
+    QList<QSerialPortInfo> portList = this->m_serial.getAvailablePorts();
+    for (const auto &port : portList) {
+        qDebug() << "name:" << port.portName()
+                 << "desc:" << port.description()
+                 << "manufacturer:" << port.manufacturer();
+    }
 }
 
 QWidget *MainWindow::createSerialPanel()

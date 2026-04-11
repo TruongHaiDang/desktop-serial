@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_BUILD_TYPE Release)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort)
 qt_standard_project_setup()
 
 include(CheckIPOSupported)
@@ -19,7 +19,7 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
 qt_add_executable(${EXEC_NAME} ${SOURCES} ${UI_SOURCES})
 target_include_directories(${EXEC_NAME} PRIVATE inc)
 target_include_directories(${EXEC_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ui)
-target_link_libraries(${EXEC_NAME} PRIVATE Qt6::Core Qt6::Widgets)
+target_link_libraries(${EXEC_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::SerialPort)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(${EXEC_NAME} PRIVATE -O3 -march=native)

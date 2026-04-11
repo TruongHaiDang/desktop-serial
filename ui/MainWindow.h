@@ -17,6 +17,9 @@
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
+#include <QDebug>
+
+#include "SerialManager.h"
 
 class QCheckBox;
 class QComboBox;
@@ -33,6 +36,8 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
+    SerialManager m_serial;
+
     QWidget *createSerialPanel();
     QWidget *createModemLinesPanel();
     QWidget *createSendPanel();
