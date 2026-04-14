@@ -1,7 +1,10 @@
 #include "MainWindow.h"
 #include "config.h"
+#include <QDateTime>
 #include <qdebug.h>
+#include <qhashfunctions.h>
 #include <qlist.h>
+#include <qpushbutton.h>
 #include <qserialportinfo.h>
 
 namespace
@@ -56,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_receiveView->setMinimumSize(470, 310);
     QPalette receivePalette = m_receiveView->palette();
     receivePalette.setColor(QPalette::Base, Qt::white);
+    receivePalette.setColor(QPalette::Text, Qt::black);
     m_receiveView->setPalette(receivePalette);
     receiveLayout->addWidget(m_receiveView);
     topRow->addWidget(receiveGroup, 1);
@@ -82,11 +86,18 @@ QWidget *MainWindow::createSerialPanel()
     serialLayout->setContentsMargins(8, 12, 8, 8);
     serialLayout->setSpacing(6);
 
-    auto addLabeledCombo = [serialLayout](const QString &labelText, const QStringList &items) {
+    auto addLabeledCombo = [this, serialLayout](const QString &labelText,
+                                                const QStringList &items,
+                                                QComboBox *&targetCombo) {
         auto *label = new QLabel(labelText);
-        auto *combo = createComboBox(items);
+        targetCombo = createComboBox(items);
         serialLayout->addWidget(label);
-        serialLayout->addWidget(combo);
+        serialLayout->addWidget(targetCombo);
+
+        connect(targetCombo,
+                &QComboBox::currentIndexChanged,
+                this,
+                [this](int) { syncSerialConfigFromUi(); });
     };
 
     // Discover serial ports
@@ -99,7 +110,7 @@ QWidget *MainWindow::createSerialPanel()
         //          << "desc:" << port.description()
         //          << "manufacturer:" << port.manufacturer();
     };
-    addLabeledCombo("Name", portNames);
+    addLabeledCombo("Name", portNames, m_portCombo);
     addLabeledCombo("Baud", {
         "300",
         "600",
@@ -121,21 +132,18 @@ QWidget *MainWindow::createSerialPanel()
         "256000",
         "460800",
         "921600"
-    });
-    addLabeledCombo("Data size", {"8", "7", "6", "5"});
-    addLabeledCombo("Parity", {"none", "even", "odd", "mark", "space"});
-    addLabeledCombo("Handshake", {"OFF", "RTS/CTS", "XON/XOFF"});
-    addLabeledCombo("Mode", {"Free", "RS485", "Loopback"});
+    }, m_baudCombo);
+    addLabeledCombo("Data size", {"8", "7", "6", "5"}, m_dataBitsCombo);
+    addLabeledCombo("Parity", {"none", "even", "odd", "mark", "space"}, m_parityCombo);
+    addLabeledCombo("Handshake", {"OFF", "RTS/CTS", "XON/XOFF"}, m_handshakeCombo);
+    addLabeledCombo("Mode", {"Free", "RS485", "Loopback"}, m_modeCombo);
 
     serialLayout->addSpacing(8);
 
-    auto *openButton = new QPushButton("Open");
-    openButton->setMinimumHeight(30);
-    serialLayout->addWidget(openButton);
-
-    auto *updateButton = new QPushButton("HWg FW update");
-    updateButton->setMinimumHeight(30);
-    serialLayout->addWidget(updateButton);
+    m_openButton = new QPushButton("Open");
+    m_openButton->setMinimumHeight(30);
+    serialLayout->addWidget(m_openButton);
+    connect(m_openButton, &QPushButton::clicked, this, &MainWindow::connectToDevice);
 
     auto *logoFrame = new QFrame;
     logoFrame->setFrameStyle(QFrame::Panel | QFrame::Sunken);
@@ -173,6 +181,8 @@ QWidget *MainWindow::createSerialPanel()
     layout->addWidget(serialGroup, 1);
     layout->addWidget(logoFrame);
 
+    syncSerialConfigFromUi();
+
     return panel;
 }
 
@@ -188,20 +198,20 @@ QWidget *MainWindow::createModemLinesPanel()
     layout->addWidget(createIndicator("DSR", QColor(0, 168, 76)));
     layout->addWidget(createIndicator("CTS", QColor(0, 168, 76)));
 
-    auto *dtr = new QCheckBox("DTR");
-    auto *rts = new QCheckBox("RTS");
-    dtr->setEnabled(false);
-    rts->setEnabled(false);
-    layout->addWidget(dtr);
-    layout->addWidget(rts);
+    m_dtrCheck = new QCheckBox("DTR");
+    m_rtsCheck = new QCheckBox("RTS");
+    m_dtrCheck->setEnabled(false);
+    m_rtsCheck->setEnabled(false);
+    layout->addWidget(m_dtrCheck);
+    layout->addWidget(m_rtsCheck);
     layout->addStretch();
     return group;
 }
 
 QWidget *MainWindow::createSendPanel()
 {
-    auto *group = new QGroupBox("Send");
-    auto *layout = new QVBoxLayout(group);
+    m_sendGroup = new QGroupBox("Send");
+    auto *layout = new QVBoxLayout(m_sendGroup);
     layout->setContentsMargins(8, 10, 8, 8);
     layout->setSpacing(8);
 
@@ -209,7 +219,8 @@ QWidget *MainWindow::createSendPanel()
     layout->addWidget(createSendRow(""));
     layout->addWidget(createSendRow(""));
 
-    return group;
+    m_sendGroup->setEnabled(false);
+    return m_sendGroup;
 }
 
 QWidget *MainWindow::createIndicator(const QString &text, const QColor &color)
@@ -246,10 +257,139 @@ QGroupBox *MainWindow::createSendRow(const QString &placeholder)
     auto *hexCheck = new QCheckBox("HEX");
 
     auto *sendButton = new QPushButton("Send");
-    sendButton->setEnabled(false);
 
     layout->addWidget(lineEdit, 1);
     layout->addWidget(hexCheck);
     layout->addWidget(sendButton);
+
+    connect(sendButton, &QPushButton::clicked, this, [this, lineEdit, hexCheck](){
+        QString text = lineEdit->text();
+        if (hexCheck->isChecked()) {
+            this->m_serial.sendHex(text);
+        } else {
+            this->m_serial.sendText(text);
+        }
+    });
+
     return row;
+}
+
+void MainWindow::connectToDevice()
+{
+    const QString portName = m_serial.getConfig().portName.trimmed();
+    const QString portLabel = portName.isEmpty() ? "serial port" : portName;
+
+    if (m_serial.isConnected()) {
+        m_serial.disconnectPort();
+        updateConnectionControls();
+        appendLogMessage(QString("Disconnected from %1").arg(portLabel));
+        if (m_openButton != nullptr) {
+            m_openButton->setText("Open");
+        }
+        return;
+    }
+
+    if (m_serial.connectPort()) {
+        updateConnectionControls();
+        appendLogMessage(QString("Connected to %1").arg(portLabel));
+        if (m_openButton != nullptr) {
+            m_openButton->setText("Close");
+        }
+        return;
+    }
+
+    updateConnectionControls();
+    appendLogMessage(QString("Failed to connect to %1").arg(portLabel));
+}
+
+void MainWindow::appendLogMessage(const QString &message)
+{
+    if (m_receiveView == nullptr) {
+        return;
+    }
+
+    const QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+    m_receiveView->append(QString("[%1] %2").arg(timestamp, message));
+}
+
+void MainWindow::updateConnectionControls()
+{
+    const bool isConnected = m_serial.isConnected();
+
+    if (m_dtrCheck != nullptr) {
+        m_dtrCheck->setEnabled(isConnected);
+    }
+
+    if (m_rtsCheck != nullptr) {
+        m_rtsCheck->setEnabled(isConnected);
+    }
+
+    if (m_sendGroup != nullptr) {
+        m_sendGroup->setEnabled(isConnected);
+    }
+}
+
+SerialConfig MainWindow::buildSerialConfigFromUi() const
+{
+    SerialConfig config = m_serial.getConfig();
+
+    if (m_portCombo != nullptr) {
+        config.portName = m_portCombo->currentText().trimmed();
+    }
+
+    if (m_baudCombo != nullptr) {
+        config.baudRate = m_baudCombo->currentText().toInt();
+    }
+
+    if (m_dataBitsCombo != nullptr) {
+        const int dataBits = m_dataBitsCombo->currentText().toInt();
+        switch (dataBits) {
+        case 5:
+            config.dataBits = QSerialPort::Data5;
+            break;
+        case 6:
+            config.dataBits = QSerialPort::Data6;
+            break;
+        case 7:
+            config.dataBits = QSerialPort::Data7;
+            break;
+        case 8:
+        default:
+            config.dataBits = QSerialPort::Data8;
+            break;
+        }
+    }
+
+    if (m_parityCombo != nullptr) {
+        const QString parity = m_parityCombo->currentText().trimmed().toLower();
+        if (parity == "even") {
+            config.parity = QSerialPort::EvenParity;
+        } else if (parity == "odd") {
+            config.parity = QSerialPort::OddParity;
+        } else if (parity == "mark") {
+            config.parity = QSerialPort::MarkParity;
+        } else if (parity == "space") {
+            config.parity = QSerialPort::SpaceParity;
+        } else {
+            config.parity = QSerialPort::NoParity;
+        }
+    }
+
+    if (m_handshakeCombo != nullptr) {
+        const QString flowControl = m_handshakeCombo->currentText().trimmed().toUpper();
+        if (flowControl == "RTS/CTS") {
+            config.flowControl = QSerialPort::HardwareControl;
+        } else if (flowControl == "XON/XOFF") {
+            config.flowControl = QSerialPort::SoftwareControl;
+        } else {
+            config.flowControl = QSerialPort::NoFlowControl;
+        }
+    }
+
+    return config;
+}
+
+void MainWindow::syncSerialConfigFromUi()
+{
+    m_serial.applyConfig(buildSerialConfigFromUi());
 }

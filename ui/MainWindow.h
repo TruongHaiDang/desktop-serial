@@ -40,11 +40,27 @@ private:
     SerialManager m_serial;
     AppSettings m_appSettings;
 
+    QComboBox *m_portCombo = nullptr;
+    QComboBox *m_baudCombo = nullptr;
+    QComboBox *m_dataBitsCombo = nullptr;
+    QComboBox *m_parityCombo = nullptr;
+    QComboBox *m_handshakeCombo = nullptr;
+    QComboBox *m_modeCombo = nullptr;
+    QPushButton *m_openButton = nullptr;
+    QCheckBox *m_dtrCheck = nullptr;
+    QCheckBox *m_rtsCheck = nullptr;
+    QGroupBox *m_sendGroup = nullptr;
+
     QWidget *createSerialPanel();
     QWidget *createModemLinesPanel();
     QWidget *createSendPanel();
     QWidget *createIndicator(const QString &text, const QColor &color);
     QGroupBox *createSendRow(const QString &placeholder);
+    void appendLogMessage(const QString &message);
+    void updateConnectionControls();
+    void syncSerialConfigFromUi();
+    SerialConfig buildSerialConfigFromUi() const;
+    void connectToDevice();
 
     QTextEdit *m_receiveView = nullptr;
 };
