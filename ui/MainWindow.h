@@ -2,6 +2,7 @@
 
 #include <QtGui/QColor>
 #include <QtWidgets/QMainWindow>
+#include <QtCore/QByteArray>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtGui/QFont>
@@ -50,6 +51,7 @@ private:
     QCheckBox *m_dtrCheck = nullptr;
     QCheckBox *m_rtsCheck = nullptr;
     QGroupBox *m_sendGroup = nullptr;
+    QByteArray m_receiveBuffer;
 
     QWidget *createSerialPanel();
     QWidget *createModemLinesPanel();
@@ -57,6 +59,9 @@ private:
     QWidget *createIndicator(const QString &text, const QColor &color);
     QGroupBox *createSendRow(const QString &placeholder);
     void appendLogMessage(const QString &message);
+    void handleSerialDataReceived(const QByteArray &data);
+    void appendReceivedDataLog(const QByteArray &data, bool partial = false);
+    void flushPendingSerialData();
     void updateConnectionControls();
     void syncSerialConfigFromUi();
     SerialConfig buildSerialConfigFromUi() const;

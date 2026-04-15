@@ -24,6 +24,29 @@ QFrame *createSeparator()
     line->setFrameShadow(QFrame::Sunken);
     return line;
 }
+
+QString formatReceivedData(const QByteArray &data)
+{
+    bool hasBinaryControl = false;
+    for (const char rawByte : data) {
+        const auto byte = static_cast<unsigned char>(rawByte);
+        const bool isAllowedWhitespace = byte == '\r' || byte == '\n' || byte == '\t';
+        if ((byte < 0x20 && !isAllowedWhitespace) || byte == 0x7f) {
+            hasBinaryControl = true;
+            break;
+        }
+    }
+
+    if (hasBinaryControl) {
+        return QString("HEX: %1").arg(QString::fromLatin1(data.toHex(' ').toUpper()));
+    }
+
+    QString text = QString::fromUtf8(data);
+    text.replace("\r", "\\r");
+    text.replace("\n", "\\n");
+    text.replace("\t", "\\t");
+    return text;
+}
 } // namespace
 
 MainWindow::MainWindow(QWidget *parent)
@@ -70,6 +93,10 @@ MainWindow::MainWindow(QWidget *parent)
     serialLayout->addWidget(createSendPanel());
 
     rootLayout->setStretchFactor(serialRoot, 1);
+
+    m_serial.setReceiveCallback([this](const QByteArray &data) {
+        handleSerialDataReceived(data);
+    });
 }
 
 QWidget *MainWindow::createSerialPanel()
@@ -263,7 +290,7 @@ QGroupBox *MainWindow::createSendRow(const QString &placeholder)
     layout->addWidget(sendButton);
 
     connect(sendButton, &QPushButton::clicked, this, [this, lineEdit, hexCheck](){
-        QString text = lineEdit->text();
+        QString text = lineEdit->text() + "\n";
         if (hexCheck->isChecked()) {
             this->m_serial.sendHex(text);
         } else {
@@ -280,6 +307,7 @@ void MainWindow::connectToDevice()
     const QString portLabel = portName.isEmpty() ? "serial port" : portName;
 
     if (m_serial.isConnected()) {
+        flushPendingSerialData();
         m_serial.disconnectPort();
         updateConnectionControls();
         appendLogMessage(QString("Disconnected from %1").arg(portLabel));
@@ -290,6 +318,7 @@ void MainWindow::connectToDevice()
     }
 
     if (m_serial.connectPort()) {
+        m_receiveBuffer.clear();
         updateConnectionControls();
         appendLogMessage(QString("Connected to %1").arg(portLabel));
         if (m_openButton != nullptr) {
@@ -310,6 +339,38 @@ void MainWindow::appendLogMessage(const QString &message)
 
     const QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
     m_receiveView->append(QString("[%1] %2").arg(timestamp, message));
+}
+
+void MainWindow::handleSerialDataReceived(const QByteArray &data)
+{
+    m_receiveBuffer.append(data);
+
+    qsizetype newlineIndex = m_receiveBuffer.indexOf('\n');
+    while (newlineIndex >= 0) {
+        const QByteArray line = m_receiveBuffer.left(newlineIndex + 1);
+        m_receiveBuffer.remove(0, newlineIndex + 1);
+        appendReceivedDataLog(line);
+        newlineIndex = m_receiveBuffer.indexOf('\n');
+    }
+}
+
+void MainWindow::appendReceivedDataLog(const QByteArray &data, bool partial)
+{
+    const QString prefix = partial ? "RX partial" : "RX";
+    appendLogMessage(QString("%1 (%2 bytes): %3")
+                         .arg(prefix)
+                         .arg(data.size())
+                         .arg(formatReceivedData(data)));
+}
+
+void MainWindow::flushPendingSerialData()
+{
+    if (m_receiveBuffer.isEmpty()) {
+        return;
+    }
+
+    appendReceivedDataLog(m_receiveBuffer, true);
+    m_receiveBuffer.clear();
 }
 
 void MainWindow::updateConnectionControls()

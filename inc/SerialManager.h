@@ -9,6 +9,8 @@
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
 
+#include <functional>
+
 struct SerialConfig {
   QString portName;
   qint32 baudRate = QSerialPort::Baud115200;
@@ -19,9 +21,15 @@ struct SerialConfig {
 };
 
 class SerialManager {
+    public:
+        using ReceiveCallback = std::function<void(const QByteArray &)>;
+
     private:
         QSerialPort m_serial;
         SerialConfig m_config;
+        ReceiveCallback m_receiveCallback;
+
+        void handleReadyRead();
 
     public:
         SerialManager();
@@ -39,6 +47,7 @@ class SerialManager {
         qint64 sendText(const QString &text);
         qint64 sendHex(const QString &hexText);
         qint64 sendBytes(const QByteArray &data);
+        void setReceiveCallback(ReceiveCallback callback);
 
         bool applyConfig(const SerialConfig &config);
         SerialConfig getConfig() const;

@@ -1,6 +1,9 @@
 #include "SerialManager.h"
 
 #include <QIODevice>
+#include <QObject>
+
+#include <utility>
 
 namespace
 {
@@ -31,7 +34,12 @@ QByteArray normalizeHexString(const QString &hexText)
 }
 } // namespace
 
-SerialManager::SerialManager() = default;
+SerialManager::SerialManager()
+{
+    QObject::connect(&m_serial, &QSerialPort::readyRead, [this]() {
+        handleReadyRead();
+    });
+}
 
 SerialManager::~SerialManager()
 {
@@ -109,6 +117,21 @@ qint64 SerialManager::sendBytes(const QByteArray &data)
     }
 
     return m_serial.write(data);
+}
+
+void SerialManager::setReceiveCallback(ReceiveCallback callback)
+{
+    m_receiveCallback = std::move(callback);
+}
+
+void SerialManager::handleReadyRead()
+{
+    const QByteArray data = m_serial.readAll();
+    if (data.isEmpty() || !m_receiveCallback) {
+        return;
+    }
+
+    m_receiveCallback(data);
 }
 
 bool SerialManager::applyConfig(const SerialConfig &config)
