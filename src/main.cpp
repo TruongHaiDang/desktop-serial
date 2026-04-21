@@ -1,12 +1,14 @@
 #include <QApplication>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QIcon>
 
 #include "MainWindow.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":/icons/icon_128.png"));
 
     MainWindow window;
     window.adjustSize();
