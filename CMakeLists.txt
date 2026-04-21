@@ -22,7 +22,20 @@ configure_file(
 )
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-qt_add_executable(${EXEC_NAME} ${SOURCES} ${UI_SOURCES})
+
+set(APP_ICON_RESOURCE "")
+if (WIN32)
+    set(APP_ICON_RESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/assets/app.rc)
+endif()
+
+qt_add_resources(RESOURCES assets/resources.qrc)
+qt_add_executable(${EXEC_NAME}
+    ${SOURCES}
+    ${UI_SOURCES}
+    ${RESOURCES}
+    ${APP_ICON_RESOURCE}
+)
+
 target_include_directories(${EXEC_NAME} PRIVATE inc)
 target_include_directories(${EXEC_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 target_include_directories(${EXEC_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
