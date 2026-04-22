@@ -80,12 +80,36 @@ MainWindow::MainWindow(QWidget *parent)
     m_receiveView = new QTextEdit;
     m_receiveView->setReadOnly(true);
     m_receiveView->setMinimumSize(470, 310);
+    m_receiveView->setContextMenuPolicy(Qt::CustomContextMenu);
     QPalette receivePalette = m_receiveView->palette();
     receivePalette.setColor(QPalette::Base, Qt::white);
     receivePalette.setColor(QPalette::Text, Qt::black);
     m_receiveView->setPalette(receivePalette);
     receiveLayout->addWidget(m_receiveView);
     topRow->addWidget(receiveGroup, 1);
+    connect(m_receiveView, &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+        QMenu menu(this);
+    
+        QAction *copyAct = menu.addAction("Copy");
+        copyAct->setShortcut(QKeySequence::Copy);
+    
+        QAction *selectAllAct = menu.addAction("Select All");
+        selectAllAct->setShortcut(QKeySequence::SelectAll);
+    
+        menu.addSeparator();
+    
+        QAction *clearAct = menu.addAction("Clear");
+    
+        QAction *selected = menu.exec(m_receiveView->mapToGlobal(pos));
+    
+        if (selected == copyAct) {
+            m_receiveView->copy();
+        } else if (selected == selectAllAct) {
+            m_receiveView->selectAll();
+        } else if (selected == clearAct) {
+            m_receiveView->clear();
+        }
+    });
 
     topRow->addWidget(createSerialPanel());
     serialLayout->addLayout(topRow, 1);
@@ -160,6 +184,7 @@ QWidget *MainWindow::createSerialPanel()
         "460800",
         "921600"
     }, m_baudCombo);
+    m_baudCombo->setCurrentText("9600");
     addLabeledCombo("Data size", {"8", "7", "6", "5"}, m_dataBitsCombo);
     addLabeledCombo("Parity", {"none", "even", "odd", "mark", "space"}, m_parityCombo);
     addLabeledCombo("Handshake", {"OFF", "RTS/CTS", "XON/XOFF"}, m_handshakeCombo);
@@ -290,12 +315,30 @@ QGroupBox *MainWindow::createSendRow(const QString &placeholder)
     layout->addWidget(sendButton);
 
     connect(sendButton, &QPushButton::clicked, this, [this, lineEdit, hexCheck](){
-        QString text = lineEdit->text() + "\n";
+        const QString rawText = lineEdit->text();
+        qint64 written = -1;
+    
         if (hexCheck->isChecked()) {
-            this->m_serial.sendHex(text);
+            written = this->m_serial.sendHex(rawText);
         } else {
-            this->m_serial.sendText(text);
+            written = this->m_serial.sendText(rawText + "\n");
         }
+    
+        QString visible = rawText;
+        visible.replace("\r", "\\r");
+        visible.replace("\n", "\\n");
+    
+        if (written < 0) {
+            appendLogMessage(QString("TX failed | HEX=%1 | data=%2")
+                .arg(hexCheck->isChecked() ? "true" : "false")
+                .arg(visible));
+            return;
+        }
+    
+        appendLogMessage(QString("TX %1 bytes | HEX=%2 | data=%3")
+            .arg(written)
+            .arg(hexCheck->isChecked() ? "true" : "false")
+            .arg(visible));
     });
 
     return row;
