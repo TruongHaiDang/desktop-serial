@@ -8,6 +8,7 @@
 #include <QString>
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
+#include <QDebug>
 
 #include <functional>
 
