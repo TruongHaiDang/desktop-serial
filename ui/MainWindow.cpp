@@ -80,12 +80,36 @@ MainWindow::MainWindow(QWidget *parent)
     m_receiveView = new QTextEdit;
     m_receiveView->setReadOnly(true);
     m_receiveView->setMinimumSize(470, 310);
+    m_receiveView->setContextMenuPolicy(Qt::CustomContextMenu);
     QPalette receivePalette = m_receiveView->palette();
     receivePalette.setColor(QPalette::Base, Qt::white);
     receivePalette.setColor(QPalette::Text, Qt::black);
     m_receiveView->setPalette(receivePalette);
     receiveLayout->addWidget(m_receiveView);
     topRow->addWidget(receiveGroup, 1);
+    connect(m_receiveView, &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+        QMenu menu(this);
+    
+        QAction *copyAct = menu.addAction("Copy");
+        copyAct->setShortcut(QKeySequence::Copy);
+    
+        QAction *selectAllAct = menu.addAction("Select All");
+        selectAllAct->setShortcut(QKeySequence::SelectAll);
+    
+        menu.addSeparator();
+    
+        QAction *clearAct = menu.addAction("Clear");
+    
+        QAction *selected = menu.exec(m_receiveView->mapToGlobal(pos));
+    
+        if (selected == copyAct) {
+            m_receiveView->copy();
+        } else if (selected == selectAllAct) {
+            m_receiveView->selectAll();
+        } else if (selected == clearAct) {
+            m_receiveView->clear();
+        }
+    });
 
     topRow->addWidget(createSerialPanel());
     serialLayout->addLayout(topRow, 1);
@@ -308,7 +332,6 @@ QGroupBox *MainWindow::createSendRow(const QString &placeholder)
             appendLogMessage(QString("TX failed | HEX=%1 | data=%2")
                 .arg(hexCheck->isChecked() ? "true" : "false")
                 .arg(visible));
-            qDebug() << "TX failed" << "HEX=" << hexCheck->isChecked() << "data=" << rawText;
             return;
         }
     
@@ -316,7 +339,6 @@ QGroupBox *MainWindow::createSendRow(const QString &placeholder)
             .arg(written)
             .arg(hexCheck->isChecked() ? "true" : "false")
             .arg(visible));
-        qDebug() << "TX written=" << written << "HEX=" << hexCheck->isChecked() << "data=" << rawText;
     });
 
     return row;

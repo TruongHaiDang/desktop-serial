@@ -19,6 +19,7 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 #include <QDebug>
+#include <QMenu>
 
 #include "SerialManager.h"
 #include "AppSettings.h"
